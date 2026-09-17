@@ -1,196 +1,439 @@
-import { useState, useEffect} from "react";
+import { useState, useEffect } from "react";
 import axios from "axios";
-
+import StatCard from "./components/StatCard";
+import BugCard from "./components/BugCard";
+import BugForm from "./components/BugForm";
+import SearchFilter from "./components/SearchFilter";
 function App() {
 
+  // =========================================================
+  // 1. FORM STATE
+  // =========================================================
+
+  // Stores the bug title entered by the user
   const [title, setTitle] = useState("");
+
+  // Stores the bug description entered by the user
   const [description, setDescription] = useState("");
-  const [priority,setPriority] =useState("High");
+
+  // Stores the selected priority
+  const [priority, setPriority] = useState("High");
+
+
+  // =========================================================
+  // 2. UI STATE
+  // =========================================================
+
+  // Displays success/error messages to the user
   const [message, setMessage] = useState("");
+
+  // Tracks whether the bug is currently being submitted
   const [loading, setLoading] = useState(false);
+
+
+  // =========================================================
+  // 3. BUG DATA STATE
+  // =========================================================
+
+  // Stores all bugs received from the backend
   const [bugs, setBugs] = useState([]);
+
+  // Stores what the user types into the search box
   const [searchTerm, setSearchTerm] = useState("");
+
+  // Stores the selected priority filter
+const [priorityFilter, setPriorityFilter] = useState("All");
+
+// Stores the selected status filter
+const [statusFilter, setStatusFilter] = useState("All");
+
+
+  // =========================================================
+  // 4. GET ALL BUGS
+  // =========================================================
+
+  // Fetches all bugs from the Express backend
+  const fetchBugs = async () => {
+
+    try {
+
+      // Send GET request to backend
+      const response = await axios.get(
+        "http://localhost:5000/api/bugs"
+      );
+
+      // Store the bugs returned by the backend in React state
+      setBugs(response.data.bugs);
+
+    } catch (error) {
+
+      // Display error in browser console if API fails
+      console.error("Error fetching bugs:", error);
+
+    }
+  };
+
+
+  // =========================================================
+  // 5. CREATE A NEW BUG
+  // =========================================================
 
   const handleSubmit = async (event) => {
 
-  event.preventDefault();
-  if(!title.trim()){
-    setMessage("Title is required");
-    return;
-  }
-  if (!description.trim()) {
-  setMessage("Description is required.");
-  return;
-}
+    // Prevent browser from refreshing the page
+    event.preventDefault();
 
-  try {
 
+    // ---------- Frontend Validation ----------
+
+    // Check whether title is empty
+    if (!title.trim()) {
+
+      setMessage("Title is required");
+
+      return;
+    }
+
+
+    // Check whether description is empty
+    if (!description.trim()) {
+
+      setMessage("Description is required.");
+
+      return;
+    }
+
+
+    try {
+
+      // Disable submit button while request is running
       setLoading(true);
-    const response = await axios.post(
-      "http://localhost:5000/api/bugs",
-      {
-        title: title,
-        description: description,
-        priority: priority
-      }
-    );
 
-    setMessage(response.data.message);
-  
+
+      // Send POST request to Express backend
+      const response = await axios.post(
+        "http://localhost:5000/api/bugs",
+        {
+          title: title,
+          description: description,
+          priority: priority
+        }
+      );
+
+
+      // Display backend success message
+      setMessage(response.data.message);
+
+
+      // Clear the form after successful submission
       setTitle("");
-     setDescription("");
-     setPriority("High");
+      setDescription("");
+      setPriority("High");
 
-     await fetchBugs();
 
-  } catch (error) {
-     setMessage("Failed to create bug");
-    console.log(error);
+      // Fetch latest bugs so the newly created bug
+      // appears immediately without refreshing the browser
+      await fetchBugs();
 
-  }
-  finally {
-  setLoading(false);
-}
 
-};
+    } catch (error) {
 
-const fetchBugs = async () => {
+      // Display error message if POST request fails
+      setMessage("Failed to create bug");
+
+      console.error("Error creating bug:", error);
+
+
+    } finally {
+
+      // Re-enable submit button
+      setLoading(false);
+    }
+  };
+
+
+  // =========================================================
+  // 6. UPDATE BUG STATUS
+  // =========================================================
+
+  const updateBugStatus = async (bugId, newStatus) => {
+
+    try {
+
+      // Send PUT request to update the selected bug
+      await axios.put(
+        `http://localhost:5000/api/bugs/${bugId}`,
+        {
+          status: newStatus
+        }
+      );
+
+
+      // Fetch updated data from backend
+      await fetchBugs();
+
+
+    } catch (error) {
+
+      console.error("Error updating bug:", error);
+
+    }
+  };
+
+
+
+  // =========================================================
+// DELETE A BUG
+// =========================================================
+
+const deleteBug = async (bugId) => {
 
   try {
 
-    const response = await axios.get(
-      "http://localhost:5000/api/bugs"
+    // Send DELETE request to the backend
+    await axios.delete(
+      `http://localhost:5000/api/bugs/${bugId}`
     );
 
-    setBugs(response.data.bugs);
-
-  } catch (error) {
-
-    console.error("Error fetching bugs:", error);
-
-  }
-
-};
-
-const filteredBugs = bugs.filter((bug) =>
-  bug.title.toLowerCase().includes(searchTerm.toLowerCase())
-);
-
-
-const updateBugStatus = async (bugId, newStatus) => {
-
-  try {
-
-    await axios.put(
-      `http://localhost:5000/api/bugs/${bugId}`,
-      {
-        status: newStatus
-      }
-    );
-
+    // Get the latest bug list after deletion
     await fetchBugs();
 
   } catch (error) {
 
-    console.error("Error updating bug:", error);
+    console.error("Error deleting bug:", error);
 
   }
-
 };
 
+
+  // =========================================================
+  // 7. SEARCH / FILTER BUGS
+  // =========================================================
+
+  // Filter bugs based on the search text.
+  //
+  // Example:
+  //
+  // searchTerm = "login"
+  //
+  // Only bugs whose title contains "login"
+  // will be displayed.
+
+  const filteredBugs = bugs.filter((bug) => {
+
+  // Search condition
+  const matchesSearch =
+    bug.title
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase());
+
+
+  // Priority condition
+  const matchesPriority =
+    priorityFilter === "All" ||
+    bug.priority === priorityFilter;
+
+
+  // Status condition
+  const matchesStatus =
+    statusFilter === "All" ||
+    bug.status === statusFilter;
+
+
+  // Bug must satisfy ALL active conditions
+  return (
+    matchesSearch &&
+    matchesPriority &&
+    matchesStatus
+  );
+
+});
+
+// =========================================================
+// DASHBOARD STATISTICS
+// =========================================================
+
+// Total number of bugs
+const totalBugs = bugs.length;
+
+// Number of open bugs
+const openBugs = bugs.filter(
+  (bug) => bug.status === "Open"
+).length;
+
+// Number of bugs currently in progress
+const inProgressBugs = bugs.filter(
+  (bug) => bug.status === "In Progress"
+).length;
+
+// Number of resolved bugs
+const resolvedBugs = bugs.filter(
+  (bug) => bug.status === "Resolved"
+).length;
+
+// Number of closed bugs
+const closedBugs = bugs.filter(
+  (bug) => bug.status === "Closed"
+).length;
+
+
+// =========================================================
+// PRIORITY STATISTICS
+// =========================================================
+
+// Number of high-priority bugs
+const highPriorityBugs = bugs.filter(
+  (bug) => bug.priority === "High"
+).length;
+
+// Number of medium-priority bugs
+const mediumPriorityBugs = bugs.filter(
+  (bug) => bug.priority === "Medium"
+).length;
+
+// Number of low-priority bugs
+const lowPriorityBugs = bugs.filter(
+  (bug) => bug.priority === "Low"
+).length;
+
+
+  // =========================================================
+  // 8. LOAD BUGS WHEN COMPONENT STARTS
+  // =========================================================
+
   useEffect(() => {
+
+    // Fetch bugs when the App component first loads
     fetchBugs();
+
   }, []);
 
+
+  // =========================================================
+  // 9. USER INTERFACE
+  // =========================================================
+
   return (
+
     <div>
+
+      {/* Application heading */}
       <h1>🐞 BugTracker Pro</h1>
 
-      <h2>Report New Bug</h2>
 
-      <form onSubmit={handleSubmit}>
 
-        <div>
-          <label>Title</label>
-          <br />
 
-          <input
-            type="text"
-            value={title}
-            onChange={(event) => setTitle(event.target.value)}
-          />
-        </div>
 
-        <br />
+      {/* =====================================================
+    DASHBOARD
+    ===================================================== */}
 
-        <div>
-          <label>Description</label>
-          <br />
+<div>
 
-          <textarea 
-            rows="4"
-            value={description}
-            onChange={(event) => setDescription(event.target.value)}
-           >
-          </textarea>
-        </div>
+  <StatCard
+    title="Total Bugs"
+    value={totalBugs}
+  />
 
-        <br />
+  <StatCard
+    title="Open"
+    value={openBugs}
+  />
 
-        <div>
-          <label>Priority</label>
-          <br />
+  <StatCard
+    title="In Progress"
+    value={inProgressBugs}
+  />
 
-          <select
-        value={priority}
-          onChange={(event) => setPriority(event.target.value)}
-         >
-            <option>High</option>
-            <option>Medium</option>
-            <option>Low</option>
-          </select>
-        </div>
+  <StatCard
+    title="Resolved"
+    value={resolvedBugs}
+  />
 
-        <br />
+  <StatCard
+    title="Closed"
+    value={closedBugs}
+  />
 
-        <button type="submit" disabled={loading}>
-          {loading ? "Creaing Bug..... ": "submit Bug"}
-        </button>
+</div>
 
-       <p>{message}</p>
-       <h2>All Bugs</h2>
+{/* =====================================================
+    PRIORITY SUMMARY
+    ===================================================== */}
 
-{bugs.map((bug) => (
-  <div key={bug.id}>
+<h2>Priority Summary</h2>
 
-    <h3>{bug.title}</h3>
+<div>
 
-    <p>{bug.description}</p>
+  <p>
+    High Priority: {highPriorityBugs}
+  </p>
 
-    <p>Priority: {bug.priority}</p>
+  <p>
+    Medium Priority: {mediumPriorityBugs}
+  </p>
 
-    <label>Status: </label>
+  <p>
+    Low Priority: {lowPriorityBugs}
+  </p>
 
-<select
-  value={bug.status}
-  onChange={(event) =>
-    updateBugStatus(bug.id, event.target.value)
-  }
->
-  <option>Open</option>
-  <option>In Progress</option>
-  <option>Resolved</option>
-  <option>Closed</option>
-</select>
+</div>
 
-  </div>
+<BugForm
+  title={title}
+  setTitle={setTitle}
+
+  description={description}
+  setDescription={setDescription}
+
+  priority={priority}
+  setPriority={setPriority}
+
+  handleSubmit={handleSubmit}
+
+  loading={loading}
+  message={message}
+/>
+    
+
+
+      {/* =====================================================
+          SEARCH BUGS
+          ===================================================== */}
+<SearchFilter
+  searchTerm={searchTerm}
+  setSearchTerm={setSearchTerm}
+
+  priorityFilter={priorityFilter}
+  setPriorityFilter={setPriorityFilter}
+
+  statusFilter={statusFilter}
+  setStatusFilter={setStatusFilter}
+/>
+      
+
+      {/* =====================================================
+          BUG LIST
+          ===================================================== */}
+
+      <h2>All Bugs</h2>
+
+
+      {filteredBugs.map((bug) => (
+
+  <BugCard
+    key={bug.id}
+    bug={bug}
+    updateBugStatus={updateBugStatus}
+    deleteBug={deleteBug}
+  />
+
 ))}
 
-      </form>
     </div>
-    
   );
 }
 
 
+// Export App component
 export default App;
