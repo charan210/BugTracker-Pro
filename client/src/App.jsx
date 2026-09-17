@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
-import StatCard from "./components/StatCard";
-import BugCard from "./components/BugCard";
 import BugForm from "./components/BugForm";
 import SearchFilter from "./components/SearchFilter";
+import BugList from "./components/BugList";
+import Dashboard from "./components/Dashboard";
 function App() {
 
   // =========================================================
@@ -30,23 +30,21 @@ function App() {
   // Tracks whether the bug is currently being submitted
   const [loading, setLoading] = useState(false);
 
+// =========================================================
+// 3. BUG DATA & FILTER STATE
+// =========================================================
 
-  // =========================================================
-  // 3. BUG DATA STATE
-  // =========================================================
+// Stores all bugs received from the backend
+const [bugs, setBugs] = useState([]);
 
-  // Stores all bugs received from the backend
-  const [bugs, setBugs] = useState([]);
+// Stores what the user types into the search box
+const [searchTerm, setSearchTerm] = useState("");
 
-  // Stores what the user types into the search box
-  const [searchTerm, setSearchTerm] = useState("");
-
-  // Stores the selected priority filter
+// Stores the selected priority filter
 const [priorityFilter, setPriorityFilter] = useState("All");
 
 // Stores the selected status filter
 const [statusFilter, setStatusFilter] = useState("All");
-
 
   // =========================================================
   // 4. GET ALL BUGS
@@ -276,26 +274,18 @@ const closedBugs = bugs.filter(
   (bug) => bug.status === "Closed"
 ).length;
 
-
 // =========================================================
 // PRIORITY STATISTICS
 // =========================================================
 
-// Number of high-priority bugs
-const highPriorityBugs = bugs.filter(
-  (bug) => bug.priority === "High"
-).length;
+// Count bugs by priority
+const priorityStats = {
+  high: bugs.filter((bug) => bug.priority === "High").length,
 
-// Number of medium-priority bugs
-const mediumPriorityBugs = bugs.filter(
-  (bug) => bug.priority === "Medium"
-).length;
+  medium: bugs.filter((bug) => bug.priority === "Medium").length,
 
-// Number of low-priority bugs
-const lowPriorityBugs = bugs.filter(
-  (bug) => bug.priority === "Low"
-).length;
-
+  low: bugs.filter((bug) => bug.priority === "Low").length
+};
 
   // =========================================================
   // 8. LOAD BUGS WHEN COMPONENT STARTS
@@ -328,34 +318,13 @@ const lowPriorityBugs = bugs.filter(
     DASHBOARD
     ===================================================== */}
 
-<div>
-
-  <StatCard
-    title="Total Bugs"
-    value={totalBugs}
-  />
-
-  <StatCard
-    title="Open"
-    value={openBugs}
-  />
-
-  <StatCard
-    title="In Progress"
-    value={inProgressBugs}
-  />
-
-  <StatCard
-    title="Resolved"
-    value={resolvedBugs}
-  />
-
-  <StatCard
-    title="Closed"
-    value={closedBugs}
-  />
-
-</div>
+<Dashboard
+  totalBugs={totalBugs}
+  openBugs={openBugs}
+  inProgressBugs={inProgressBugs}
+  resolvedBugs={resolvedBugs}
+  closedBugs={closedBugs}
+/>
 
 {/* =====================================================
     PRIORITY SUMMARY
@@ -365,17 +334,17 @@ const lowPriorityBugs = bugs.filter(
 
 <div>
 
-  <p>
-    High Priority: {highPriorityBugs}
-  </p>
+ <p>
+  High Priority: {priorityStats.high}
+</p>
 
-  <p>
-    Medium Priority: {mediumPriorityBugs}
-  </p>
+<p>
+  Medium Priority: {priorityStats.medium}
+</p>
 
-  <p>
-    Low Priority: {lowPriorityBugs}
-  </p>
+<p>
+  Low Priority: {priorityStats.low}
+</p>
 
 </div>
 
@@ -410,25 +379,13 @@ const lowPriorityBugs = bugs.filter(
   statusFilter={statusFilter}
   setStatusFilter={setStatusFilter}
 />
-      
+      <BugList
+  filteredBugs={filteredBugs}
+  updateBugStatus={updateBugStatus}
+  deleteBug={deleteBug}
+/>
 
-      {/* =====================================================
-          BUG LIST
-          ===================================================== */}
-
-      <h2>All Bugs</h2>
-
-
-      {filteredBugs.map((bug) => (
-
-  <BugCard
-    key={bug.id}
-    bug={bug}
-    updateBugStatus={updateBugStatus}
-    deleteBug={deleteBug}
-  />
-
-))}
+     
 
     </div>
   );
