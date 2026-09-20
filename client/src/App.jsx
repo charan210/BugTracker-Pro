@@ -1,9 +1,14 @@
 import { useState, useEffect } from "react";
-import axios from "axios";
 import BugForm from "./components/BugForm";
 import SearchFilter from "./components/SearchFilter";
 import BugList from "./components/BugList";
 import Dashboard from "./components/Dashboard";
+import {
+  getBugs,
+  createBug,
+  updateBugStatus as updateBugStatusApi,
+  deleteBug as deleteBugApi
+} from "./api/bugApi";
 function App() {
 
   // =========================================================
@@ -56,12 +61,9 @@ const [statusFilter, setStatusFilter] = useState("All");
     try {
 
       // Send GET request to backend
-      const response = await axios.get(
-        "http://localhost:5000/api/bugs"
-      );
+      const data = await getBugs();
 
-      // Store the bugs returned by the backend in React state
-      setBugs(response.data.bugs);
+       setBugs(data.bugs);
 
     } catch (error) {
 
@@ -109,18 +111,14 @@ const [statusFilter, setStatusFilter] = useState("All");
 
 
       // Send POST request to Express backend
-      const response = await axios.post(
-        "http://localhost:5000/api/bugs",
-        {
-          title: title,
-          description: description,
-          priority: priority
-        }
-      );
-
+   const response = await createBug(
+  title,
+  description,
+  priority
+);
 
       // Display backend success message
-      setMessage(response.data.message);
+      setMessage(response.message);
 
 
       // Clear the form after successful submission
@@ -137,10 +135,11 @@ const [statusFilter, setStatusFilter] = useState("All");
     } catch (error) {
 
       // Display error message if POST request fails
-      setMessage("Failed to create bug");
+     console.error("Error creating bug:", error);
 
-      console.error("Error creating bug:", error);
+  console.error("Server response:", error.response?.data);
 
+  setMessage("Failed to create bug");
 
     } finally {
 
@@ -154,29 +153,23 @@ const [statusFilter, setStatusFilter] = useState("All");
   // 6. UPDATE BUG STATUS
   // =========================================================
 
-  const updateBugStatus = async (bugId, newStatus) => {
+ const updateBugStatus = async (bugId, newStatus) => {
 
-    try {
+  try {
 
-      // Send PUT request to update the selected bug
-      await axios.put(
-        `http://localhost:5000/api/bugs/${bugId}`,
-        {
-          status: newStatus
-        }
-      );
+    await updateBugStatusApi(
+      bugId,
+      newStatus
+    );
 
+    await fetchBugs();
 
-      // Fetch updated data from backend
-      await fetchBugs();
+  } catch (error) {
 
+    console.error("Error updating bug:", error);
 
-    } catch (error) {
-
-      console.error("Error updating bug:", error);
-
-    }
-  };
+  }
+};
 
 
 
@@ -188,12 +181,8 @@ const deleteBug = async (bugId) => {
 
   try {
 
-    // Send DELETE request to the backend
-    await axios.delete(
-      `http://localhost:5000/api/bugs/${bugId}`
-    );
+    await deleteBugApi(bugId);
 
-    // Get the latest bug list after deletion
     await fetchBugs();
 
   } catch (error) {
@@ -202,7 +191,6 @@ const deleteBug = async (bugId) => {
 
   }
 };
-
 
   // =========================================================
   // 7. SEARCH / FILTER BUGS
@@ -254,26 +242,24 @@ const deleteBug = async (bugId) => {
 // Total number of bugs
 const totalBugs = bugs.length;
 
-// Number of open bugs
-const openBugs = bugs.filter(
-  (bug) => bug.status === "Open"
-).length;
+// Count bugs by status
+const statusStats = {
+  open: bugs.filter(
+    (bug) => bug.status === "Open"
+  ).length,
 
-// Number of bugs currently in progress
-const inProgressBugs = bugs.filter(
-  (bug) => bug.status === "In Progress"
-).length;
+  inProgress: bugs.filter(
+    (bug) => bug.status === "In Progress"
+  ).length,
 
-// Number of resolved bugs
-const resolvedBugs = bugs.filter(
-  (bug) => bug.status === "Resolved"
-).length;
+  resolved: bugs.filter(
+    (bug) => bug.status === "Resolved"
+  ).length,
 
-// Number of closed bugs
-const closedBugs = bugs.filter(
-  (bug) => bug.status === "Closed"
-).length;
-
+  closed: bugs.filter(
+    (bug) => bug.status === "Closed"
+  ).length
+};
 // =========================================================
 // PRIORITY STATISTICS
 // =========================================================
@@ -320,12 +306,8 @@ const priorityStats = {
 
 <Dashboard
   totalBugs={totalBugs}
-  openBugs={openBugs}
-  inProgressBugs={inProgressBugs}
-  resolvedBugs={resolvedBugs}
-  closedBugs={closedBugs}
+  statusStats={statusStats}
 />
-
 {/* =====================================================
     PRIORITY SUMMARY
     ===================================================== */}

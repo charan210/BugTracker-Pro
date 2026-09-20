@@ -4,8 +4,12 @@
 //
 // This component displays the overall bug statistics.
 //
-// App.jsx calculates the statistics and passes them here.
-// Dashboard.jsx is responsible only for displaying them.
+// App.jsx is responsible for:
+// - Fetching bug data
+// - Calculating statistics
+//
+// Dashboard.jsx is responsible for:
+// - Displaying the statistics
 //
 // =========================================================
 
@@ -13,10 +17,7 @@ import StatCard from "./StatCard";
 
 function Dashboard({
   totalBugs,
-  openBugs,
-  inProgressBugs,
-  resolvedBugs,
-  closedBugs
+  statusStats
 }) {
   return (
     <div>
@@ -28,22 +29,22 @@ function Dashboard({
 
       <StatCard
         title="Open"
-        value={openBugs}
+        value={statusStats.open}
       />
 
       <StatCard
         title="In Progress"
-        value={inProgressBugs}
+        value={statusStats.inProgress}
       />
 
       <StatCard
         title="Resolved"
-        value={resolvedBugs}
+        value={statusStats.resolved}
       />
 
       <StatCard
         title="Closed"
-        value={closedBugs}
+        value={statusStats.closed}
       />
 
     </div>
