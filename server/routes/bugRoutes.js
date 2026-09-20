@@ -13,7 +13,9 @@ const express = require("express");
 
 const {
   getBugs,
-  createBug
+  createBug,
+  updateBugStatus,
+  deleteBug
 } = require("../controllers/bugController");
 
 const router = express.Router();
@@ -31,6 +33,18 @@ router.get("/", getBugs);
 // =========================================================
 
 router.post("/", createBug);
+
+// =========================================================
+// UPDATE BUG STATUS
+// =========================================================
+
+router.put("/:id", updateBugStatus);
+
+// =========================================================
+// DELETE A BUG
+// =========================================================
+
+router.delete("/:id", deleteBug);
 
 
 // =========================================================

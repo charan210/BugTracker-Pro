@@ -2,8 +2,7 @@
 // 1. IMPORTS
 // ============================================================
 
-// Import our MySQL database connection
-const db = require("./db");
+
 
 // Import Express framework
 const express = require("express");
@@ -12,6 +11,8 @@ const express = require("express");
 const cors = require("cors");
 
 const bugRoutes = require("./routes/bugRoutes");
+
+const authRoutes = require("./routes/authRoutes");
 
 
 // ============================================================
@@ -50,6 +51,8 @@ app.use(cors());
 app.use(express.json());
 
 app.use("/api/bugs", bugRoutes);
+
+app.use("/api/auth", authRoutes);
 
 
 // ============================================================

@@ -136,6 +136,48 @@ const updateBugStatus = (req, res) => {
 
 };
 
+// =========================================================
+// DELETE A BUG
+// =========================================================
+
+const deleteBug = (req, res) => {
+
+  const bugId = req.params.id;
+
+  const sql = "DELETE FROM bugs WHERE id = ?";
+
+  db.query(
+    sql,
+    [bugId],
+    (error, result) => {
+
+      if (error) {
+
+        console.error("Error deleting bug:", error);
+
+        return res.status(500).json({
+          success: false,
+          message: "Failed to delete bug."
+        });
+      }
+
+      if (result.affectedRows === 0) {
+
+        return res.status(404).json({
+          success: false,
+          message: "Bug not found."
+        });
+      }
+
+      res.status(200).json({
+        success: true,
+        message: "Bug deleted successfully!"
+      });
+
+    }
+  );
+
+};
 
 // =========================================================
 // EXPORT CONTROLLER FUNCTIONS
@@ -144,5 +186,6 @@ const updateBugStatus = (req, res) => {
 module.exports = {
   getBugs,
   createBug,
-  updateBugStatus
+  updateBugStatus,
+  deleteBug
 };
